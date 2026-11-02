@@ -1,0 +1,82 @@
+rules_version = '2';
+// Reglas de la app. El correo del profesor se pone al compilar (scripts/preparar.mjs) desde src/cliente.json.
+// El profesor (administrador) ve y cambia todo. Cada alumno solo ve lo suyo.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function conSesion() { return request.auth != null; }
+    function esAdmin() {
+      return conSesion() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == '__CORREO_ADMIN__';
+    }
+    function rutaUsuario() { return /databases/$(database)/documents/usuarios/$(request.auth.uid); }
+    function esAlumno() { return conSesion() && exists(rutaUsuario()); }
+    function miAlumno() { return get(rutaUsuario()).data.alumnoId; }
+    function paraMi(para) { return para == 'todos' || para == miAlumno(); }
+
+    // Ajustes generales (cuota, día de pago, horario disponible, teléfono del profesor).
+    match /ajustes/{doc} {
+      allow read: if esAdmin() || esAlumno();
+      allow write: if esAdmin();
+    }
+
+    // Horas ocupadas por clases fijas, sin nombres, para que los alumnos vean qué está libre.
+    match /publico/{doc} {
+      allow read: if esAdmin() || esAlumno();
+      allow write: if esAdmin();
+    }
+
+    match /alumnos/{id} {
+      allow read: if esAdmin() || (esAlumno() && miAlumno() == id);
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin()
+        // El alumno se vincula a sí mismo al aceptar su invitación (en el mismo lote que crea su usuario).
+        || (conSesion() && getAfter(rutaUsuario()).data.alumnoId == id
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'correoApp', 'vinculado'])
+            && request.resource.data.uid == request.auth.uid);
+    }
+
+    // Invitaciones: el código es el id del documento. Solo se puede usar una vez.
+    match /invitaciones/{codigo} {
+      allow get: if conSesion();
+      allow list, create, delete: if esAdmin();
+      allow update: if esAdmin()
+        || (conSesion() && resource.data.usada == false
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usada', 'uid'])
+            && request.resource.data.usada == true && request.resource.data.uid == request.auth.uid
+            && getAfter(rutaUsuario()).data.alumnoId == resource.data.alumnoId);
+    }
+
+    match /usuarios/{uid} {
+      allow read: if esAdmin() || (conSesion() && request.auth.uid == uid);
+      allow create: if conSesion() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['alumnoId', 'codigo', 'nombre', 'correo'])
+        && get(/databases/$(database)/documents/invitaciones/$(request.resource.data.codigo)).data.usada == false
+        && get(/databases/$(database)/documents/invitaciones/$(request.resource.data.codigo)).data.alumnoId == request.resource.data.alumnoId;
+      allow update, delete: if esAdmin();
+    }
+
+    match /reservas/{id} {
+      // Los alumnos ven fecha, hora y estado de todas (para saber qué está ocupado); no llevan nombres.
+      allow read: if esAdmin() || esAlumno();
+      allow create: if esAdmin()
+        || (esAlumno() && request.resource.data.alumnoId == miAlumno() && request.resource.data.estado == 'pendiente');
+      allow update: if esAdmin();
+      allow delete: if esAdmin() || (esAlumno() && resource.data.alumnoId == miAlumno() && resource.data.estado == 'pendiente');
+    }
+
+    match /pagos/{id} {
+      allow read: if esAdmin() || (esAlumno() && resource.data.alumnoId == miAlumno());
+      allow write: if esAdmin();
+    }
+
+    match /avisos/{id} {
+      allow read: if esAdmin() || (esAlumno() && paraMi(resource.data.para));
+      allow write: if esAdmin();
+    }
+
+    match /materiales/{id} {
+      allow read: if esAdmin() || (esAlumno() && paraMi(resource.data.para));
+      allow write: if esAdmin();
+    }
+  }
+}

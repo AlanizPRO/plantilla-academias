@@ -1,0 +1,20 @@
+{
+  "nombreApp": "Academia Demo",
+  "nombreCorto": "Academia",
+  "descripcion": "Academia de música",
+  "ciudad": "Managua",
+  "nombreProfesor": "Profesor Demo",
+  "correoAdmin": "correo-del-profesor@gmail.com",
+  "ensena": "Guitarra y piano",
+  "colorPrincipal": "#1f4e8c",
+  "colorAcento": "#3fa7cc",
+  "colorFondo": "#eef6fa",
+  "modulos": ["alumnos", "horarios", "pagos", "avisos", "reservas", "materiales"],
+  "cobro": { "cuotaMensual": 1500, "moneda": "C$", "diaPago": 5, "diasAvisoAntes": 3 },
+  "firebase": {
+    "projectId": "id-del-proyecto",
+    "apiKey": "",
+    "appId": "",
+    "messagingSenderId": ""
+  }
+}
