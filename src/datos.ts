@@ -47,13 +47,14 @@ export function useLista<T>(q: Query<DocumentData> | null, deps: unknown[] = [])
   return lista
 }
 
-export function useAjustes() {
-  const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES)
+export function useAjustesConEstado(): [Ajustes, boolean] {
+  const [estado, setEstado] = useState<[Ajustes, boolean]>([AJUSTES_INICIALES, false])
   useEffect(() => onSnapshot(doc(db, 'ajustes', 'general'), (s) => {
-    if (s.exists()) setAjustes({ ...AJUSTES_INICIALES, ...s.data() })
-  }, () => {}), [])
-  return ajustes
+    setEstado([s.exists() ? { ...AJUSTES_INICIALES, ...s.data() } : AJUSTES_INICIALES, true])
+  }, () => setEstado([AJUSTES_INICIALES, true])), [])
+  return estado
 }
+export const useAjustes = () => useAjustesConEstado()[0]
 
 export function usePublico() {
   const [fijos, setFijos] = useState<Clase[]>([])

@@ -47,14 +47,14 @@ export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjuste
         {DIAS.map((nombre, dia) => {
           const b = bloque(dia)
           return (
-            <div key={nombre} className="fila">
-              <label className="check" htmlFor={`d-${dia}`} style={{ minWidth: 120 }}>
+            <div key={nombre} className="fila-dia">
+              <label className="check" htmlFor={`d-${dia}`}>
                 <input id={`d-${dia}`} type="checkbox" checked={!!b} onChange={(e) => cambiarDia(dia, e.target.checked ? {} : null)} />{nombre}
               </label>
               {b && <>
-                <input aria-label={`${nombre} desde`} className="btn btn-borde btn-chico" type="time" step={900} value={b.desde} onChange={(e) => cambiarDia(dia, { desde: e.target.value })} />
+                <input aria-label={`${nombre} desde`} className="hora-input" type="time" step={900} value={b.desde} onChange={(e) => cambiarDia(dia, { desde: e.target.value })} />
                 <span className="suave">a</span>
-                <input aria-label={`${nombre} hasta`} className="btn btn-borde btn-chico" type="time" step={900} value={b.hasta} onChange={(e) => cambiarDia(dia, { hasta: e.target.value })} />
+                <input aria-label={`${nombre} hasta`} className="hora-input" type="time" step={900} value={b.hasta} onChange={(e) => cambiarDia(dia, { hasta: e.target.value })} />
               </>}
             </div>
           )

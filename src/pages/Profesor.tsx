@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { tiene } from '../cliente'
 import { Barra, Encabezado, type Pestana } from '../componentes'
 import {
-  col, cuotaDe, DIAS, dinero, hora12, hoy, isoDia, isoMes, nombreMes, todos, useAjustes, useLista,
+  col, cuotaDe, DIAS, dinero, hora12, hoy, isoDia, isoMes, nombreMes, todos, useAjustes, useAjustesConEstado, useLista,
   type Alumno as TAlumno, type Pago, type Reserva,
 } from '../datos'
 import { ICONOS } from '../iconos'
@@ -20,7 +20,7 @@ type Vista = 'inicio' | 'alumnos' | 'horario' | 'pagos' | 'mas' | 'avisos' | 'ma
 
 export default function Profesor({ usuario, botonTema }: { usuario: User; botonTema: ReactNode }) {
   const [vista, setVista] = useState<Vista>('inicio')
-  const ajustes = useAjustes()
+  const [ajustes, ajustesCargados] = useAjustesConEstado()
   const alumnos = useLista<TAlumno>(todos('alumnos')) ?? []
   const desde = isoDia(hoy())
   const pendientes = (useLista<Reserva>(query(col('reservas'), where('estado', '==', 'pendiente')), []) ?? []).filter((r) => r.fecha >= desde)
@@ -46,7 +46,7 @@ export default function Profesor({ usuario, botonTema }: { usuario: User; botonT
           {vista === 'pagos' && <Pagos alumnos={alumnos} ajustes={ajustes} />}
           {vista === 'avisos' && <Avisos alumnos={alumnos} />}
           {vista === 'materiales' && <Materiales alumnos={alumnos} />}
-          {vista === 'ajustes' && <Ajustes key={JSON.stringify(ajustes)} ajustes={ajustes} correo={usuario.email ?? ''} onSalir={salir} />}
+          {vista === 'ajustes' && <Ajustes key={ajustesCargados ? 'cargado' : 'inicial'} ajustes={ajustes} correo={usuario.email ?? ''} onSalir={salir} />}
           {vista === 'mas' && (
             <section className="pantalla">
               <h1>Más</h1>

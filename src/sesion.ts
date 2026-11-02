@@ -64,7 +64,11 @@ export function useSesion(): Sesion & { errorInvitacion: string } {
 
   useEffect(() => {
     if (!usuario || esAdmin) { setPerfil(undefined); return }
-    return onSnapshot(doc(db, 'usuarios', usuario.uid), (s) => setPerfil(s.exists() ? s.data() : null), () => setPerfil(null))
+    // Ignoramos lo que aún no confirmó el servidor: si no, el alumno pediría sus datos antes de que la invitación quede guardada.
+    return onSnapshot(doc(db, 'usuarios', usuario.uid), { includeMetadataChanges: true }, (s) => {
+      if (s.metadata.hasPendingWrites) return
+      setPerfil(s.exists() ? s.data() : null)
+    }, () => setPerfil(null))
   }, [usuario, esAdmin])
 
   // Alumno nuevo que llegó con un enlace: lo vinculamos solo.

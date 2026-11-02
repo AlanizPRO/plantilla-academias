@@ -133,3 +133,5 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 .actualizar .si { background: #fff; color: var(--principal); }
 .actualizar .luego { background: transparent; color: #fff; opacity: .85; }
 #root { height: 100%; }
+.fila-dia { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 1.2fr) auto minmax(0, 1.2fr); gap: 6px; align-items: center; min-height: 44px; }
+.hora-input { border: 1.5px solid var(--linea); background: var(--card); color: var(--fg); border-radius: 10px; padding: 6px 4px; font: inherit; font-size: .85rem; min-width: 0; width: 100%; }
