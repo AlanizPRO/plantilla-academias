@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { cliente } from '../cliente'
 import { DIAS, mensajeError, type Ajustes as TAjustes, type Disponible } from '../datos'
 import { db } from '../firebase'
+import { T } from '../textos'
 
 export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjustes; correo: string; onSalir: () => void }) {
   const [f, setF] = useState<TAjustes>(ajustes)
@@ -37,13 +38,13 @@ export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjuste
           <label className="campo" htmlFor="aj-dia">Día de pago<input id="aj-dia" type="number" min={1} max={28} value={f.diaPago} onChange={(e) => poner('diaPago', e.target.value)} /></label>
           <label className="campo" htmlFor="aj-antes">Avisar días antes<input id="aj-antes" type="number" min={0} max={10} value={f.diasAvisoAntes} onChange={(e) => poner('diasAvisoAntes', e.target.value)} /></label>
         </div>
-        <label className="campo" htmlFor="aj-tel">Tu WhatsApp (para que los alumnos te escriban)
+        <label className="campo" htmlFor="aj-tel">Tu WhatsApp (para que {T.tusPersonas} te escriban)
           <input id="aj-tel" type="tel" inputMode="tel" value={f.telefonoProfesor} onChange={(e) => poner('telefonoProfesor', e.target.value)} placeholder="8888 8888" />
         </label>
       </div>
       <div className="panel">
         <h3>Horario disponible</h3>
-        <label className="campo" htmlFor="aj-dur">Duración de cada clase (minutos)<input id="aj-dur" type="number" min={15} step={15} value={f.duracion} onChange={(e) => poner('duracion', e.target.value)} /></label>
+        <label className="campo" htmlFor="aj-dur">Duración de cada {T.clase} (minutos)<input id="aj-dur" type="number" min={15} step={15} value={f.duracion} onChange={(e) => poner('duracion', e.target.value)} /></label>
         {DIAS.map((nombre, dia) => {
           const b = bloque(dia)
           return (
@@ -64,7 +65,7 @@ export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjuste
       {estado && !['listo', 'guardando'].includes(estado) && <p className="error">{estado}</p>}
       <button className="btn btn-principal" disabled={estado === 'guardando'} onClick={guardar}>{estado === 'guardando' ? 'Guardando…' : 'Guardar ajustes'}</button>
       <div className="panel">
-        <p className="suave chico">Entraste como <b>{correo}</b> (profesor).</p>
+        <p className="suave chico">Entraste como <b>{correo}</b> ({T.admin}).</p>
         <button className="btn btn-borde" onClick={onSalir}>Cerrar sesión</button>
       </div>
     </section>

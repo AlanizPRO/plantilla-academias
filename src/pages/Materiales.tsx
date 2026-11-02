@@ -4,6 +4,7 @@ import { Hoja, Vacio } from '../componentes'
 import { col, isoMes, mensajeError, nombreMes, todos, useLista, type Alumno, type Material } from '../datos'
 import { db } from '../firebase'
 import { ICONOS } from '../iconos'
+import { T } from '../textos'
 
 export default function Materiales({ alumnos, alumnoId }: { alumnos?: Alumno[]; alumnoId?: string }) {
   const q = alumnoId ? query(col('materiales'), where('para', 'in', ['todos', alumnoId])) : todos('materiales')
@@ -12,7 +13,7 @@ export default function Materiales({ alumnos, alumnoId }: { alumnos?: Alumno[]; 
   const [nuevo, setNuevo] = useState(false)
   const profesor = !alumnoId
   const meses = [...new Set(lista.map((m) => m.mes ?? ''))]
-  const nombre = (id: string) => (id === 'todos' ? 'Todos' : alumnos?.find((a) => a.id === id)?.nombre ?? 'Alumno')
+  const nombre = (id: string) => (id === 'todos' ? 'Todos' : alumnos?.find((a) => a.id === id)?.nombre ?? T.Persona)
 
   return (
     <section className="pantalla">

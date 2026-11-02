@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Actualizar from './Actualizar'
 import { cliente } from './cliente'
+import { T } from './textos'
 import { mensajeError } from './datos'
 import { Logo } from './componentes'
 import { ICONOS } from './iconos'
@@ -75,7 +76,7 @@ function SinInvitacion({ error, correo }: { error: string; correo: string }) {
       <div className="panel">
         <Logo />
         <h2>Falta tu invitación</h2>
-        <p className="suave">Entraste como <b>{correo}</b>. Para usar la app de {cliente.nombreApp}, tu profesor te manda un enlace o un código.</p>
+        <p className="suave">Entraste como <b>{correo}</b>. Para usar la app de {cliente.nombreApp}, {T.tuAdmin} te manda un enlace o un código.</p>
         {ultimoError && <p className="error">{ultimoError}</p>}
         <label className="campo" style={{ width: '100%' }} htmlFor="codigo">Código de invitación
           <input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ej. K7P2QX" autoCapitalize="characters" />

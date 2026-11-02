@@ -2,6 +2,7 @@ import type { User } from 'firebase/auth'
 import { query, where } from 'firebase/firestore'
 import { useState, type ReactNode } from 'react'
 import { tiene } from '../cliente'
+import { T } from '../textos'
 import { Barra, Encabezado, type Pestana } from '../componentes'
 import {
   col, cuotaDe, DIAS, dinero, hora12, hoy, isoDia, isoMes, nombreMes, todos, useAjustes, useAjustesConEstado, useLista,
@@ -28,9 +29,9 @@ export default function Profesor({ usuario, botonTema }: { usuario: User; botonT
   const ir = (v: string) => { setVista(v as Vista); scrollTo(0, 0) }
   const pestanas: Pestana[] = [
     { id: 'inicio', nombre: 'Inicio', icono: 'inicio' },
-    { id: 'alumnos', nombre: 'Alumnos', icono: 'alumnos' },
-    { id: 'horario', nombre: 'Horario', icono: 'horario', punto: pendientes.length > 0 },
-    { id: 'pagos', nombre: 'Pagos', icono: 'pagos' },
+    { id: 'alumnos', nombre: T.Personas, icono: 'alumnos' },
+    ...(tiene('horarios') ? [{ id: 'horario', nombre: 'Horario', icono: 'horario', punto: pendientes.length > 0 }] : []),
+    ...(tiene('pagos') ? [{ id: 'pagos', nombre: 'Pagos', icono: 'pagos' }] : []),
     { id: 'mas', nombre: 'Más', icono: 'mas' },
   ]
   const actual = ['avisos', 'materiales', 'ajustes'].includes(vista) ? 'mas' : vista
@@ -38,7 +39,7 @@ export default function Profesor({ usuario, botonTema }: { usuario: User; botonT
   return (
     <>
       <div className="app">
-        <Encabezado subtitulo="Profesor" derecha={botonTema} />
+        <Encabezado subtitulo={T.Admin} derecha={botonTema} />
         <main>
           {vista === 'inicio' && <Inicio alumnos={alumnos} pendientes={pendientes.length} onIr={ir} nombre={usuario.displayName ?? ''} />}
           {vista === 'alumnos' && <Alumnos alumnos={alumnos} ajustes={ajustes} />}
@@ -51,8 +52,8 @@ export default function Profesor({ usuario, botonTema }: { usuario: User; botonT
             <section className="pantalla">
               <h1>Más</h1>
               <div className="lista">
-                <Opcion icono="avisos" titulo="Avisos" texto="Mensajes para tus alumnos" onClick={() => ir('avisos')} />
-                {tiene('materiales') && <Opcion icono="materiales" titulo="Material de estudio" texto="Partituras, audios y videos de Drive" onClick={() => ir('materiales')} />}
+                {tiene('avisos') && <Opcion icono="avisos" titulo="Avisos" texto={`Mensajes para ${T.tusPersonas}`} onClick={() => ir('avisos')} />}
+                {tiene('materiales') && <Opcion icono="materiales" titulo={T.material} texto={T.materialDescripcion} onClick={() => ir('materiales')} />}
                 <Opcion icono="ajustes" titulo="Ajustes" texto="Cuota, día de pago y horario disponible" onClick={() => ir('ajustes')} />
               </div>
             </section>
@@ -85,40 +86,40 @@ function Inicio({ alumnos, pendientes, onIr, nombre }: { alumnos: TAlumno[]; pen
   const dia = new Date().getDay()
   const clasesHoy = [
     ...activos.flatMap((a) => (a.clases ?? []).filter((c) => c.dia === dia).map((c) => ({ hora: c.hora, nombre: a.nombre, extra: false }))),
-    ...reservasHoy.map((r) => ({ hora: r.hora, nombre: alumnos.find((a) => a.id === r.alumnoId)?.nombre ?? 'Alumno', extra: true })),
+    ...reservasHoy.map((r) => ({ hora: r.hora, nombre: alumnos.find((a) => a.id === r.alumnoId)?.nombre ?? T.Persona, extra: true })),
   ].sort((a, b) => a.hora.localeCompare(b.hora))
 
   return (
     <section className="pantalla">
       <div><h1>Hola{nombre ? `, ${nombre.split(' ')[0]}` : ''}</h1><p className="suave">{DIAS[dia]} · {nombreMes(mes)}</p></div>
       <div className="stats">
-        <button className="stat" onClick={() => onIr('alumnos')} style={{ textAlign: 'left' }}><b>{activos.length}</b><span>Alumnos</span></button>
-        <button className="stat" onClick={() => onIr('pagos')} style={{ textAlign: 'left' }}><b>{deben.length}</b><span>Deben este mes</span></button>
-        <button className="stat" onClick={() => onIr('horario')} style={{ textAlign: 'left' }}><b>{pendientes}</b><span>Por aprobar</span></button>
+        <button className="stat" onClick={() => onIr('alumnos')} style={{ textAlign: 'left' }}><b>{activos.length}</b><span>{T.Personas}</span></button>
+        {tiene('pagos') && <button className="stat" onClick={() => onIr('pagos')} style={{ textAlign: 'left' }}><b>{deben.length}</b><span>Deben este mes</span></button>}
+        {tiene('reservas') && <button className="stat" onClick={() => onIr('horario')} style={{ textAlign: 'left' }}><b>{pendientes}</b><span>Por aprobar</span></button>}
       </div>
-      {pendientes > 0 && <button className="aviso" style={{ border: 0, textAlign: 'left' }} onClick={() => onIr('horario')}>Tienes {pendientes} solicitud{pendientes > 1 ? 'es' : ''} de clase por aprobar →</button>}
-      <div className="panel">
-        <h3>Clases de hoy</h3>
-        {clasesHoy.length === 0 && <p className="suave">No hay clases hoy.</p>}
+      {pendientes > 0 && <button className="aviso" style={{ border: 0, textAlign: 'left' }} onClick={() => onIr('horario')}>Tienes {pendientes} solicitud{pendientes > 1 ? 'es' : ''} de {T.clase} por aprobar →</button>}
+      {tiene('horarios') && <div className="panel">
+        <h3>{T.Clases} de hoy</h3>
+        {clasesHoy.length === 0 && <p className="suave">No hay {T.clases} hoy.</p>}
         <div className="lista">
           {clasesHoy.map((c, i) => (
             <div key={i} className="fila-item"><b style={{ minWidth: 80 }}>{hora12(c.hora)}</b><div><b>{c.nombre}</b></div>{c.extra && <span className="pill p-amarillo">Extra</span>}</div>
           ))}
         </div>
-      </div>
-      {deben.length > 0 && (
+      </div>}
+      {tiene('pagos') && deben.length > 0 && (
         <div className="panel">
           <h3>Por cobrar en {nombreMes(mes).split(' ')[0]}</h3>
-          <p><b>{dinero(deben.reduce((s, a) => s + cuotaDe(a, ajustes), 0), ajustes)}</b> de {deben.length} alumno{deben.length > 1 ? 's' : ''}.</p>
+          <p><b>{dinero(deben.reduce((s, a) => s + cuotaDe(a, ajustes), 0), ajustes)}</b> de {deben.length} {deben.length > 1 ? T.personas : T.persona}.</p>
           <button className="btn btn-principal" onClick={() => onIr('pagos')}>Ver y recordar por WhatsApp</button>
         </div>
       )}
       {alumnos.length === 0 && (
         <div className="panel destacado">
           <h3>Primeros pasos</h3>
-          <p className="suave">1. Revisa tu cuota y tu horario en Ajustes. 2. Agrega a tus alumnos. 3. Invita a cada uno a la app con su enlace.</p>
+          <p className="suave">1. Revisa tu cuota y tu horario en Ajustes. 2. Agrega a {T.tusPersonas}. 3. Invita a cada uno a la app con su enlace.</p>
           <div className="fila"><button className="btn" style={{ background: '#fff', color: 'var(--principal)' }} onClick={() => onIr('ajustes')}>Ajustes</button>
-            <button className="btn" style={{ background: '#fff', color: 'var(--principal)' }} onClick={() => onIr('alumnos')}>Agregar alumnos</button></div>
+            <button className="btn" style={{ background: '#fff', color: 'var(--principal)' }} onClick={() => onIr('alumnos')}>Agregar {T.personas}</button></div>
         </div>
       )}
     </section>

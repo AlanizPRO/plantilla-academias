@@ -2,6 +2,7 @@ import type { User } from 'firebase/auth'
 import { doc, onSnapshot, query, where } from 'firebase/firestore'
 import { useEffect, useState, type ReactNode } from 'react'
 import { cliente, tiene } from '../cliente'
+import { T } from '../textos'
 import { Barra, Encabezado, Vacio, type Pestana } from '../componentes'
 import {
   col, cuotaDe, dinero, enlaceWhatsApp, estadoPago, fechaCorta, hora12, hoy, isoDia, isoMes, nombreMes, sumarDias,
@@ -36,10 +37,10 @@ export default function Alumno({ usuario, alumnoId, botonTema }: { usuario: User
   }
   const pestanas: Pestana[] = [
     { id: 'inicio', nombre: 'Inicio', icono: 'inicio' },
-    { id: 'horario', nombre: 'Horario', icono: 'horario' },
-    { id: 'pagos', nombre: 'Pagos', icono: 'pagos' },
+    ...(tiene('horarios') ? [{ id: 'horario', nombre: 'Horario', icono: 'horario' }] : []),
+    ...(tiene('pagos') ? [{ id: 'pagos', nombre: 'Pagos', icono: 'pagos' }] : []),
     ...(tiene('materiales') ? [{ id: 'material', nombre: 'Material', icono: 'materiales' }] : []),
-    { id: 'avisos', nombre: 'Avisos', icono: 'avisos', punto: nuevos > 0 },
+    ...(tiene('avisos') ? [{ id: 'avisos', nombre: 'Avisos', icono: 'avisos', punto: nuevos > 0 }] : []),
   ]
   const mes = isoMes(new Date())
   const estado = estadoPago(pagos.some((p) => p.mes === mes), mes, ajustes)
@@ -47,7 +48,7 @@ export default function Alumno({ usuario, alumnoId, botonTema }: { usuario: User
   return (
     <>
       <div className="app">
-        <Encabezado subtitulo={yo?.nombre ?? usuario.displayName ?? 'Alumno'} derecha={botonTema} />
+        <Encabezado subtitulo={yo?.nombre ?? usuario.displayName ?? T.Persona} derecha={botonTema} />
         <main>
           {vista === 'inicio' && <Inicio yo={yo} estado={estado} mes={mes} ajustes={ajustes} avisos={avisos.slice(0, 2)} nuevos={nuevos} onIr={ir} />}
           {vista === 'horario' && <Horario modo="alumno" ajustes={ajustes} yo={yo} fijos={fijos} />}
@@ -126,13 +127,13 @@ function Inicio({ yo, estado, mes, ajustes, avisos, nuevos, onIr }: PropsBanner 
   return (
     <section className="pantalla">
       <div><h1>Hola{yo ? `, ${yo.nombre.split(' ')[0]}` : ''} 👋</h1><p className="suave">{cliente.nombreApp}</p></div>
-      <div className="panel destacado">
-        <span className="etiqueta" style={{ color: 'rgba(255,255,255,.85)' }}>Tu próxima clase</span>
-        <h2>{proxima ? `${fechaCorta(proxima)} · ${hora12(hh)}` : 'Sin clases agendadas'}</h2>
+      {tiene('horarios') && <div className="panel destacado">
+        <span className="etiqueta" style={{ color: 'rgba(255,255,255,.85)' }}>{T.tuProxima}</span>
+        <h2>{proxima ? `${fechaCorta(proxima)} · ${hora12(hh)}` : `Sin ${T.clases} agendad${T.c}s`}</h2>
         {yo?.instrumento && <p className="suave">{yo.instrumento}{yo.nivel ? ` · ${yo.nivel}` : ''}</p>}
-      </div>
-      <BannerPago yo={yo} estado={estado} mes={mes} ajustes={ajustes} />
-      {tiene('reservas') && <button className="btn btn-principal" onClick={() => onIr('horario')}>Reponer o pedir clase</button>}
+      </div>}
+      {tiene('pagos') && <BannerPago yo={yo} estado={estado} mes={mes} ajustes={ajustes} />}
+      {tiene('reservas') && <button className="btn btn-principal" onClick={() => onIr('horario')}>Reponer o pedir {T.clase}</button>}
       <div className="panel">
         <div className="fila" style={{ justifyContent: 'space-between' }}>
           <h3>Avisos {nuevos > 0 && <span className="pill p-rosa">{nuevos} nuevo{nuevos > 1 ? 's' : ''}</span>}</h3>

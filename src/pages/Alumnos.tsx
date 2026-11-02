@@ -1,6 +1,7 @@
 import { addDoc, doc, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { useState } from 'react'
 import { cliente } from '../cliente'
+import { T } from '../textos'
 import { Hoja, Vacio } from '../componentes'
 import {
   actualizarAgendaPublica, col, cuotaDe, dinero, DIAS, enlaceWhatsApp, estadoPago, hora12, iniciales, isoMes,
@@ -26,7 +27,7 @@ export default function Alumnos({ alumnos, ajustes }: { alumnos: Alumno[]; ajust
   return (
     <section className="pantalla">
       <div className="top">
-        <div><h1>Alumnos</h1><p className="suave">{alumnos.filter((a) => a.activo).length} activos</p></div>
+        <div><h1>{T.Personas}</h1><p className="suave">{alumnos.filter((a) => a.activo).length} activos</p></div>
         <button className="btn btn-principal" onClick={() => setNuevo(true)}>+ Nuevo</button>
       </div>
       <label className="campo" htmlFor="buscar"><span hidden>Buscar</span>
@@ -36,7 +37,7 @@ export default function Alumnos({ alumnos, ajustes }: { alumnos: Alumno[]; ajust
         <button className="tab" role="tab" aria-selected={!verInactivos} onClick={() => setVerInactivos(false)}>Activos</button>
         <button className="tab" role="tab" aria-selected={verInactivos} onClick={() => setVerInactivos(true)}>Ya no vienen</button>
       </div>
-      {lista.length === 0 && <Vacio>{alumnos.length === 0 ? 'Todavía no hay alumnos. Toca "+ Nuevo" para agregar el primero.' : 'No hay alumnos aquí.'}</Vacio>}
+      {lista.length === 0 && <Vacio>{alumnos.length === 0 ? `Todavía no hay ${T.personas}. Toca "+ Nuevo" para agregar ${T.personaFemenino ? 'la primera' : 'el primero'}.` : `No hay ${T.personas} aquí.`}</Vacio>}
       <div className="lista">
         {lista.map((a) => {
           const [texto, pill] = TEXTO_PAGO[estadoPago(pagos.some((p) => p.alumnoId === a.id), mes, ajustes)]
@@ -45,7 +46,7 @@ export default function Alumnos({ alumnos, ajustes }: { alumnos: Alumno[]; ajust
               <span className="ini">{iniciales(a.nombre)}</span>
               <div>
                 <b>{a.nombre}</b>
-                <small>{[a.instrumento, (a.clases ?? []).map((c) => `${DIAS[c.dia].slice(0, 3)} ${hora12(c.hora)}`).join(', ')].filter(Boolean).join(' · ') || 'Sin clase fija'}</small>
+                <small>{[a.instrumento, (a.clases ?? []).map((c) => `${DIAS[c.dia].slice(0, 3)} ${hora12(c.hora)}`).join(', ')].filter(Boolean).join(' · ') || `Sin ${T.clase} fij${T.c}`}</small>
               </div>
               {a.activo && <span className={`pill ${pill}`}>{texto}</span>}
             </button>
@@ -79,7 +80,7 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
   async function copiar() {
     try { await navigator.clipboard.writeText(enlace); setCopiado(true) } catch { setCopiado(false) }
   }
-  const textoInvitacion = `Hola ${a.nombre.split(' ')[0]}, te invito a la app de ${cliente.nombreApp}. Ahí verás tus clases, tus pagos y el material. Ábrela aquí y entra con tu cuenta de Google: ${enlace}\n(Si te pide código: ${codigo})`
+  const textoInvitacion = `Hola ${a.nombre.split(' ')[0]}, te invito a la app de ${cliente.nombreApp}. Ahí verás tus ${T.clases}, tus pagos y el material. Ábrela aquí y entra con tu cuenta de Google: ${enlace}\n(Si te pide código: ${codigo})`
 
   return (
     <Hoja titulo={a.nombre} onCerrar={onCerrar}>
@@ -88,8 +89,8 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
         {a.vinculado ? <span className="pill p-verde">Usa la app</span> : <span className="pill p-gris">Sin app todavía</span>}
       </div>
       <div className="panel">
-        <p><b>Clases fijas:</b> {(a.clases ?? []).map((c) => `${DIAS[c.dia]} ${hora12(c.hora)}`).join(', ') || 'ninguna'}</p>
-        {a.instrumento && <p><b>Aprende:</b> {a.instrumento}{a.nivel ? ` · ${a.nivel}` : ''}</p>}
+        <p><b>{T.Clases} fij{T.c}s:</b> {(a.clases ?? []).map((c) => `${DIAS[c.dia]} ${hora12(c.hora)}`).join(', ') || (T.claseFemenino ? 'ninguna' : 'ninguno')}</p>
+        {a.instrumento && <p><b>{T.detalle}:</b> {a.instrumento}{a.nivel ? ` · ${a.nivel}` : ''}</p>}
         {a.telefono && <p><b>Teléfono:</b> {a.telefono}</p>}
         {a.correo && <p><b>Correo:</b> {a.correo}</p>}
         {a.notas && <p className="suave">{a.notas}</p>}
@@ -99,7 +100,7 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
         <div className="panel">
           <h3>Invitar a la app</h3>
           {!codigo ? <>
-            <p className="suave chico">Se crea un enlace que sirve una sola vez. El alumno lo abre y entra con su Google.</p>
+            <p className="suave chico">Se crea un enlace que sirve una sola vez. {T.laPersona[0].toUpperCase() + T.laPersona.slice(1)} lo abre y entra con su Google.</p>
             <button className="btn btn-principal" onClick={invitar}>{ICONOS.enlace}Crear invitación</button>
           </> : <>
             <p className="ok">Código: <b style={{ letterSpacing: '.12em' }}>{codigo}</b></p>
@@ -148,17 +149,17 @@ function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: A
   }
 
   return (
-    <Hoja titulo={alumno ? 'Editar alumno' : 'Nuevo alumno'} onCerrar={onCerrar}>
+    <Hoja titulo={alumno ? `Editar ${T.persona}` : T.nuevaPersona} onCerrar={onCerrar}>
       <div className="campos">
         <label className="campo" htmlFor="a-nombre">Nombre completo *<input id="a-nombre" value={f.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
         <label className="campo" htmlFor="a-tel">WhatsApp<input id="a-tel" type="tel" inputMode="tel" value={f.telefono} onChange={(e) => poner('telefono', e.target.value)} placeholder="8888 8888" /></label>
-        <label className="campo" htmlFor="a-inst">Qué aprende<input id="a-inst" value={f.instrumento} onChange={(e) => poner('instrumento', e.target.value)} placeholder={cliente.ensena || 'Ej. Guitarra'} /></label>
+        <label className="campo" htmlFor="a-inst">{T.detalle}<input id="a-inst" value={f.instrumento} onChange={(e) => poner('instrumento', e.target.value)} placeholder={cliente.ensena || T.detalleEjemplo} /></label>
         <label className="campo" htmlFor="a-nivel">Nivel<input id="a-nivel" value={f.nivel} onChange={(e) => poner('nivel', e.target.value)} placeholder="Ej. Principiante" /></label>
         <label className="campo" htmlFor="a-cuota">Cuota mensual<input id="a-cuota" type="number" inputMode="decimal" min={0} value={cuota} onChange={(e) => setCuota(e.target.value)} placeholder="La de siempre" /></label>
         <label className="campo" htmlFor="a-correo">Correo (opcional)<input id="a-correo" type="email" value={f.correo} onChange={(e) => poner('correo', e.target.value)} /></label>
       </div>
       <div className="panel">
-        <h3>Clases fijas cada semana</h3>
+        <h3>{T.Clases} fij{T.c}s cada semana</h3>
         <div className="fila">
           {(f.clases ?? []).map((c, i) => (
             <span key={`${c.dia}-${c.hora}`} className="pill p-principal">{DIAS[c.dia]} {hora12(c.hora)}{' '}
@@ -166,7 +167,7 @@ function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: A
                 onClick={() => poner('clases', f.clases.filter((_, j) => j !== i))}>×</button>
             </span>
           ))}
-          {(f.clases ?? []).length === 0 && <span className="suave chico">Ninguna todavía.</span>}
+          {(f.clases ?? []).length === 0 && <span className="suave chico">{T.claseFemenino ? 'Ninguna' : 'Ninguno'} todavía.</span>}
         </div>
         <div className="fila">
           <select aria-label="Día" className="btn btn-borde" value={clase.dia} onChange={(e) => setClase({ ...clase, dia: Number(e.target.value) })}>
@@ -177,7 +178,7 @@ function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: A
         </div>
       </div>
       <label className="campo" htmlFor="a-notas">Notas<textarea id="a-notas" value={f.notas} onChange={(e) => poner('notas', e.target.value)} placeholder="Ej. Prepara el recital de diciembre" /></label>
-      {alumno && <label className="check" htmlFor="a-activo"><input id="a-activo" type="checkbox" checked={f.activo} onChange={(e) => poner('activo', e.target.checked)} />Sigue viniendo a clases</label>}
+      {alumno && <label className="check" htmlFor="a-activo"><input id="a-activo" type="checkbox" checked={f.activo} onChange={(e) => poner('activo', e.target.checked)} />Sigue viniendo a {T.clases}</label>}
       {error && <p className="error">{error}</p>}
       <button className="btn btn-principal" disabled={guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar'}</button>
     </Hoja>

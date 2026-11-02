@@ -8,6 +8,7 @@ import {
 } from '../datos'
 import { db } from '../firebase'
 import { ICONOS } from '../iconos'
+import { T } from '../textos'
 
 type Props =
   | { modo: 'profesor'; ajustes: Ajustes; alumnos: Alumno[] }
@@ -15,7 +16,7 @@ type Props =
 
 type Casilla = { hora: string; tipo: 'libre' | 'fija' | 'reserva' | 'pasada'; nombres: string[]; reserva?: Reserva; mia?: boolean }
 
-const TIPOS = { reposicion: 'Reposición', extra: 'Clase extra' }
+const TIPOS = { reposicion: 'Reposición', extra: `${T.Clase} extra` }
 
 export default function Horario(props: Props) {
   const { ajustes, modo } = props
@@ -27,7 +28,7 @@ export default function Horario(props: Props) {
 
   const alumnos = modo === 'profesor' ? props.alumnos : []
   const yo = modo === 'alumno' ? props.yo : null
-  const nombreDe = (id: string) => alumnos.find((a) => a.id === id)?.nombre ?? 'Alumno'
+  const nombreDe = (id: string) => alumnos.find((a) => a.id === id)?.nombre ?? T.Persona
 
   const d = new Date(`${fecha}T00:00`)
   const dia = d.getDay()
@@ -55,7 +56,7 @@ export default function Horario(props: Props) {
 
   return (
     <section className="pantalla">
-      <div><h1>Horario</h1><p className="suave">{modo === 'profesor' ? 'Toca una hora para agendar o revisar una clase.' : tiene('reservas') ? 'Las horas en verde están libres. Toca una para pedir clase.' : 'Así está la semana del profesor.'}</p></div>
+      <div><h1>Horario</h1><p className="suave">{modo === 'profesor' ? `Toca una hora para agendar o revisar ${T.unaClase}.` : tiene('reservas') ? `Las horas en verde están libres. Toca una para pedir ${T.clase}.` : `Así está la semana de ${T.tuAdmin}.`}</p></div>
 
       {pendientes.length > 0 && (
         <div className="panel">
@@ -81,7 +82,7 @@ export default function Horario(props: Props) {
 
       <div className="panel">
         <h3>{DIAS[dia]} {d.getDate()}</h3>
-        {casillas.length === 0 && <p className="suave">No hay clases este día.</p>}
+        {casillas.length === 0 && <p className="suave">No hay {T.clases} este día.</p>}
         <div className="horas">
           {casillas.map((c) => <CasillaHora key={c.hora} c={c} modo={modo} onTocar={() => setElegida(c)} />)}
         </div>
@@ -117,7 +118,7 @@ function CasillaHora({ c, modo, onTocar }: { c: Casilla; modo: 'profesor' | 'alu
   let clase = 'hora', texto = ''
   if (c.tipo === 'libre') { clase += ' libre'; texto = 'Libre' }
   else if (c.tipo === 'pasada') { clase += ' ocupada'; texto = 'Ya pasó' }
-  else if (c.mia) { clase += ' mia'; texto = c.tipo === 'fija' ? 'Tu clase' : c.reserva?.estado === 'pendiente' ? 'Tu solicitud' : 'Tu clase extra' }
+  else if (c.mia) { clase += ' mia'; texto = c.tipo === 'fija' ? `Tu ${T.clase}` : c.reserva?.estado === 'pendiente' ? 'Tu solicitud' : `Tu ${T.clase} extra` }
   else if (modo === 'profesor') {
     clase += c.reserva?.estado === 'pendiente' ? ' pendiente' : ' ocupada'
     texto = `${c.nombres.join(', ')}${c.reserva ? ` · ${c.reserva.estado === 'pendiente' ? 'por aprobar' : TIPOS[c.reserva.tipo].toLowerCase()}` : ''}`
@@ -146,13 +147,13 @@ function HojaAlumno({ c, fecha, yo, onCerrar }: { c: Casilla; fecha: string; yo:
     <Hoja titulo="Pedir clase" onCerrar={onCerrar}>
       <p><b>{fechaCorta(new Date(`${fecha}T00:00`))} · {hora12(c.hora)}</b></p>
       {estado === 'listo' ? <>
-        <p className="ok">Listo. Tu profesor la tiene que aprobar; la verás en "Mis solicitudes".</p>
+        <p className="ok">Listo. {T.tuAdmin[0].toUpperCase() + T.tuAdmin.slice(1)} la tiene que aprobar; la verás en "Mis solicitudes".</p>
         <button className="btn btn-principal" onClick={onCerrar}>Entendido</button>
       </> : <>
         <div className="tabs" role="tablist">
           {(['reposicion', 'extra'] as const).map((t) => <button key={t} className="tab" role="tab" aria-selected={tipo === t} onClick={() => setTipo(t)}>{TIPOS[t]}</button>)}
         </div>
-        <p className="suave chico">{tipo === 'reposicion' ? 'Para recuperar una clase que perdiste.' : 'Una clase adicional a la de siempre.'}</p>
+        <p className="suave chico">{tipo === 'reposicion' ? `Para recuperar ${T.unaClase} que perdiste.` : `${T.unaClase[0].toUpperCase() + T.unaClase.slice(1)} adicional a l${T.c} de siempre.`}</p>
         <label className="campo" htmlFor="nota-res">Nota para el profesor (opcional)
           <textarea id="nota-res" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej. Falté el martes por enfermedad" />
         </label>
@@ -183,7 +184,7 @@ function HojaProfesor({ c, fecha, alumnos, onCerrar }: { c: Casilla; fecha: stri
         <p><b>{cuando}</b></p>
         <label className="campo" htmlFor="alumno-res">Alumno
           <select id="alumno-res" value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)}>
-            <option value="">Elige un alumno</option>
+            <option value="">Elige {T.unaPersona}</option>
             {activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
         </label>
@@ -197,11 +198,11 @@ function HojaProfesor({ c, fecha, alumnos, onCerrar }: { c: Casilla; fecha: stri
     )
   }
   const textoWa = (ok: boolean) => ok
-    ? `Hola ${alumno?.nombre.split(' ')[0] ?? ''}, tu clase del ${cuando} quedó confirmada. ¡Nos vemos!`
-    : `Hola ${alumno?.nombre.split(' ')[0] ?? ''}, no puedo darte la clase del ${cuando}. Escoge otra hora en la app, por favor.`
+    ? `Hola ${alumno?.nombre.split(' ')[0] ?? ''}, tu ${T.clase} del ${cuando} quedó confirmad${T.c}. ¡Nos vemos!`
+    : `Hola ${alumno?.nombre.split(' ')[0] ?? ''}, no puedo darte ${T.laClase} del ${cuando}. Escoge otra hora en la app, por favor.`
   return (
-    <Hoja titulo={r.estado === 'pendiente' ? 'Solicitud de clase' : 'Clase agendada'} onCerrar={onCerrar}>
-      <p><b>{alumno?.nombre ?? 'Alumno'}</b></p>
+    <Hoja titulo={r.estado === 'pendiente' ? `Solicitud de ${T.clase}` : `${T.Clase} agendad${T.c}`} onCerrar={onCerrar}>
+      <p><b>{alumno?.nombre ?? T.Persona}</b></p>
       <p className="suave">{cuando} · {TIPOS[r.tipo]}</p>
       {r.nota && <p className="aviso">"{r.nota}"</p>}
       {error && <p className="error">{error}</p>}
@@ -211,7 +212,7 @@ function HojaProfesor({ c, fecha, alumnos, onCerrar }: { c: Casilla; fecha: stri
           <button className="btn btn-rosa" onClick={() => hacer(() => updateDoc(doc(db, 'reservas', r.id), { estado: 'rechazada' }))}>No puedo</button>
         </div>
       ) : (
-        <button className="btn btn-rosa" onClick={() => hacer(() => deleteDoc(doc(db, 'reservas', r.id)))}>Cancelar esta clase</button>
+        <button className="btn btn-rosa" onClick={() => hacer(() => deleteDoc(doc(db, 'reservas', r.id)))}>Cancelar {T.estaClase}</button>
       )}
       {alumno?.telefono && (
         <div className="fila">
