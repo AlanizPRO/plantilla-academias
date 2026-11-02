@@ -6,7 +6,10 @@ import { cliente } from './cliente'
 // Datos públicos del proyecto de Firebase del cliente (no son secretos).
 const app = initializeApp({
   apiKey: cliente.firebase.apiKey,
-  authDomain: `${cliente.firebase.projectId}.firebaseapp.com`,
+  // Con loginEnHosting (lo activa la Super App cuando Carlos ya agregó el enlace en Google Cloud) el inicio de sesión
+  // usa el mismo dominio de la app: así Safari en iPhone/iPad no la olvida al cerrar.
+  authDomain: (cliente as { loginEnHosting?: boolean }).loginEnHosting && location.hostname === `${cliente.firebase.projectId}.web.app`
+    ? location.hostname : `${cliente.firebase.projectId}.firebaseapp.com`,
   projectId: cliente.firebase.projectId,
   storageBucket: `${cliente.firebase.projectId}.firebasestorage.app`,
   messagingSenderId: cliente.firebase.messagingSenderId,

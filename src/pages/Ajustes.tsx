@@ -4,6 +4,7 @@ import { cliente } from '../cliente'
 import { DIAS, mensajeError, type Ajustes as TAjustes, type Disponible } from '../datos'
 import { db } from '../firebase'
 import { T } from '../textos'
+import BotonRespaldo from './BotonRespaldo'
 
 export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjustes; correo: string; onSalir: () => void }) {
   const [f, setF] = useState<TAjustes>(ajustes)
@@ -64,6 +65,10 @@ export default function Ajustes({ ajustes, correo, onSalir }: { ajustes: TAjuste
       {estado === 'listo' && <p className="ok">Guardado.</p>}
       {estado && !['listo', 'guardando'].includes(estado) && <p className="error">{estado}</p>}
       <button className="btn btn-principal" disabled={estado === 'guardando'} onClick={guardar}>{estado === 'guardando' ? 'Guardando…' : 'Guardar ajustes'}</button>
+      <BotonRespaldo hojas={[
+        { coleccion: 'alumnos', nombre: T.Personas ?? 'Personas' }, { coleccion: 'pagos', nombre: 'Pagos' }, { coleccion: 'reservas', nombre: 'Reservas' },
+        { coleccion: 'avisos', nombre: 'Avisos' }, { coleccion: 'materiales', nombre: 'Materiales' }, { coleccion: 'usuarios', nombre: 'Cuentas' },
+      ]} />
       <div className="panel">
         <p className="suave chico">Entraste como <b>{correo}</b> ({T.admin}).</p>
         <button className="btn btn-borde" onClick={onSalir}>Cerrar sesión</button>

@@ -7,6 +7,7 @@
   "correoAdmin": "correo-del-profesor@gmail.com",
   "ensena": "Guitarra y piano",
   "plan": "spark",
+  "loginEnHosting": false,
   "textos": {
     "admin": "profesor",
     "persona": "alumno",
