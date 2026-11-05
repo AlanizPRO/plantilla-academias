@@ -1,5 +1,5 @@
 # Publica la app en el Firebase del cliente (el projectId sale de src/cliente.json).
-# No publica nada hasta que el repositorio tenga la variable PUBLICAR_APP = si.
+# Siempre compila para revisar el código; no publica nada hasta que el repositorio tenga la variable PUBLICAR_APP = si.
 # Necesita el secreto FIREBASE_SERVICE_ACCOUNT (cuenta "publicador" agregada como Editor en el proyecto del cliente).
 name: Publicar app
 
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   publicar:
-    if: vars.PUBLICAR_APP == 'si'
+    # Siempre compila (así se revisa que el código esté bien); solo publica si el repositorio tiene PUBLICAR_APP = si.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +26,7 @@ jobs:
       - name: Compilar la app
         run: npm run build
       - name: Publicar página y reglas
+        if: vars.PUBLICAR_APP == 'si'
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
