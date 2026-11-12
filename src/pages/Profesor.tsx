@@ -6,7 +6,7 @@ import { T } from '../textos'
 import { Barra, Encabezado, type Pestana } from '../componentes'
 import {
   col, cuotaDe, DIAS, dinero, hora12, hoy, isoDia, isoMes, nombreMes, todos, useAjustes, useAjustesConEstado, useLista,
-  type Alumno as TAlumno, type Pago, type Reserva,
+  sinClase, type Alumno as TAlumno, type Pago, type Reserva,
 } from '../datos'
 import { ICONOS } from '../iconos'
 import { salir } from '../sesion'
@@ -15,15 +15,19 @@ import Alumnos from './Alumnos'
 import Avisos from './Avisos'
 import Horario from './Horario'
 import Materiales from './Materiales'
-import Pagos from './Pagos'
+import Calendario, { useFechas } from './Calendario'
+import Pagos, { usePorConfirmar } from './Pagos'
+import Programas from './Programas'
+import Tareas from './Tareas'
 
-type Vista = 'inicio' | 'alumnos' | 'horario' | 'pagos' | 'mas' | 'avisos' | 'materiales' | 'ajustes'
+type Vista = 'inicio' | 'alumnos' | 'horario' | 'pagos' | 'mas' | 'avisos' | 'materiales' | 'ajustes' | 'tareas' | 'programas' | 'calendario'
 
 export default function Profesor({ usuario, botonTema }: { usuario: User; botonTema: ReactNode }) {
   const [vista, setVista] = useState<Vista>('inicio')
   const [ajustes, ajustesCargados] = useAjustesConEstado()
   const alumnos = useLista<TAlumno>(todos('alumnos')) ?? []
   const desde = isoDia(hoy())
+  const porConfirmar = usePorConfirmar()
   const pendientes = (useLista<Reserva>(query(col('reservas'), where('estado', '==', 'pendiente')), []) ?? []).filter((r) => r.fecha >= desde)
 
   const ir = (v: string) => { setVista(v as Vista); scrollTo(0, 0) }
@@ -31,30 +35,36 @@ export default function Profesor({ usuario, botonTema }: { usuario: User; botonT
     { id: 'inicio', nombre: 'Inicio', icono: 'inicio' },
     { id: 'alumnos', nombre: T.Personas, icono: 'alumnos' },
     ...(tiene('horarios') ? [{ id: 'horario', nombre: 'Horario', icono: 'horario', punto: pendientes.length > 0 }] : []),
-    ...(tiene('pagos') ? [{ id: 'pagos', nombre: 'Pagos', icono: 'pagos' }] : []),
+    ...(tiene('pagos') ? [{ id: 'pagos', nombre: 'Pagos', icono: 'pagos', punto: porConfirmar.length > 0 }] : []),
     { id: 'mas', nombre: 'Más', icono: 'mas' },
   ]
-  const actual = ['avisos', 'materiales', 'ajustes'].includes(vista) ? 'mas' : vista
+  const actual = ['avisos', 'materiales', 'ajustes', 'tareas', 'programas', 'calendario'].includes(vista) ? 'mas' : vista
 
   return (
     <>
       <div className="app">
         <Encabezado subtitulo={T.Admin} derecha={botonTema} />
         <main>
-          {vista === 'inicio' && <Inicio alumnos={alumnos} pendientes={pendientes.length} onIr={ir} nombre={usuario.displayName ?? ''} />}
+          {vista === 'inicio' && <Inicio alumnos={alumnos} pendientes={pendientes.length} porConfirmar={porConfirmar.length} onIr={ir} nombre={usuario.displayName ?? ''} />}
           {vista === 'alumnos' && <Alumnos alumnos={alumnos} ajustes={ajustes} />}
           {vista === 'horario' && <Horario modo="profesor" ajustes={ajustes} alumnos={alumnos} />}
           {vista === 'pagos' && <Pagos alumnos={alumnos} ajustes={ajustes} />}
           {vista === 'avisos' && <Avisos alumnos={alumnos} />}
           {vista === 'materiales' && <Materiales alumnos={alumnos} />}
+          {vista === 'tareas' && <Tareas alumnos={alumnos} />}
+          {vista === 'programas' && <Programas alumnos={alumnos} />}
+          {vista === 'calendario' && <Calendario profesor />}
           {vista === 'ajustes' && <Ajustes key={ajustesCargados ? 'cargado' : 'inicial'} ajustes={ajustes} correo={usuario.email ?? ''} onSalir={salir} />}
           {vista === 'mas' && (
             <section className="pantalla">
               <h1>Más</h1>
               <div className="lista">
                 {tiene('avisos') && <Opcion icono="avisos" titulo="Avisos" texto={`Mensajes para ${T.tusPersonas}`} onClick={() => ir('avisos')} />}
+                {tiene('tareas') && <Opcion icono="tareas" titulo={T.Tareas} texto={`Lo que ${T.tusPersonas} deben practicar`} onClick={() => ir('tareas')} />}
+                {tiene('programas') && <Opcion icono="programa" titulo={`${T.Programa}s del semestre`} texto={`${T.programaDescripcion}, con avance`} onClick={() => ir('programas')} />}
+                {tiene('calendario') && <Opcion icono="calendario" titulo="Calendario" texto={`Feriados, días sin ${T.clases} y actividades`} onClick={() => ir('calendario')} />}
                 {tiene('materiales') && <Opcion icono="materiales" titulo={T.material} texto={T.materialDescripcion} onClick={() => ir('materiales')} />}
-                <Opcion icono="ajustes" titulo="Ajustes" texto="Cuota, día de pago y horario disponible" onClick={() => ir('ajustes')} />
+                <Opcion icono="ajustes" titulo="Ajustes" texto="Cuota, cuentas, recordatorio y horario" onClick={() => ir('ajustes')} />
               </div>
             </section>
           )}
@@ -75,7 +85,8 @@ function Opcion({ icono, titulo, texto, onClick }: { icono: string; titulo: stri
   )
 }
 
-function Inicio({ alumnos, pendientes, onIr, nombre }: { alumnos: TAlumno[]; pendientes: number; onIr: (v: string) => void; nombre: string }) {
+function Inicio({ alumnos, pendientes, porConfirmar, onIr, nombre }: { alumnos: TAlumno[]; pendientes: number; porConfirmar: number; onIr: (v: string) => void; nombre: string }) {
+  const fechas = useFechas()
   const ajustes = useAjustes()
   const mes = isoMes(new Date())
   const hoyIso = isoDia(hoy())
@@ -97,9 +108,11 @@ function Inicio({ alumnos, pendientes, onIr, nombre }: { alumnos: TAlumno[]; pen
         {tiene('pagos') && <button className="stat" onClick={() => onIr('pagos')} style={{ textAlign: 'left' }}><b>{deben.length}</b><span>Deben este mes</span></button>}
         {tiene('reservas') && <button className="stat" onClick={() => onIr('horario')} style={{ textAlign: 'left' }}><b>{pendientes}</b><span>Por aprobar</span></button>}
       </div>
+      {porConfirmar > 0 && <button className="aviso" style={{ border: 0, textAlign: 'left' }} onClick={() => onIr('pagos')}>💵 {porConfirmar} pago{porConfirmar > 1 ? 's' : ''} por confirmar (te avisaron con comprobante) →</button>}
       {pendientes > 0 && <button className="aviso" style={{ border: 0, textAlign: 'left' }} onClick={() => onIr('horario')}>Tienes {pendientes} solicitud{pendientes > 1 ? 'es' : ''} de {T.clase} por aprobar →</button>}
       {tiene('horarios') && <div className="panel">
         <h3>{T.Clases} de hoy</h3>
+        {sinClase(fechas, hoyIso) && <p className="aviso">Hoy no hay {T.clases}: {fechas.find((f) => f.tipo !== 'evento' && hoyIso >= f.fecha && hoyIso <= (f.hasta || f.fecha))?.titulo}.</p>}
         {clasesHoy.length === 0 && <p className="suave">No hay {T.clases} hoy.</p>}
         <div className="lista">
           {clasesHoy.map((c, i) => (

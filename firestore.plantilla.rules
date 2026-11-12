@@ -69,6 +69,53 @@ service cloud.firestore {
       allow write: if esAdmin();
     }
 
+    // Número de recibo que sigue (solo el profesor).
+    match /contadores/{doc} {
+      allow read, write: if esAdmin();
+    }
+
+    // A quién ya se le mandó el recordatorio de pago este mes (solo el profesor).
+    match /recordatorios/{id} {
+      allow read, write: if esAdmin();
+    }
+
+    // "Ya pagué": el alumno avisa con foto del comprobante; el profesor confirma o rechaza.
+    match /avisosPago/{id} {
+      allow read: if esAdmin() || (esAlumno() && resource.data.alumnoId == miAlumno());
+      allow create: if esAdmin()
+        || (esAlumno() && request.resource.data.alumnoId == miAlumno()
+            && request.resource.data.estado == 'pendiente'
+            && request.resource.data.keys().hasOnly(['alumnoId', 'mes', 'monto', 'metodo', 'cuenta', 'referencia', 'foto', 'nota', 'estado', 'fecha'])
+            && request.resource.data.monto is number && request.resource.data.monto > 0
+            && request.resource.data.mes is string && request.resource.data.mes.size() == 7
+            && (!('foto' in request.resource.data) || (request.resource.data.foto is string && request.resource.data.foto.size() < 400000)));
+      allow update: if esAdmin();
+      allow delete: if esAdmin() || (esAlumno() && resource.data.alumnoId == miAlumno() && resource.data.estado != 'confirmado');
+    }
+
+    // Feriados, días sin clases y actividades.
+    match /fechas/{id} {
+      allow read: if esAdmin() || esAlumno();
+      allow write: if esAdmin();
+    }
+
+    // Tareas: el alumno solo puede marcar la suya como hecha (su casilla dentro de "hechas").
+    match /tareas/{id} {
+      allow read: if esAdmin() || (esAlumno() && paraMi(resource.data.para));
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin()
+        || (esAlumno() && paraMi(resource.data.para)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hechas'])
+            && request.resource.data.hechas.diff(resource.data.hechas).affectedKeys().hasOnly([miAlumno()])
+            && request.resource.data.hechas[miAlumno()] is bool);
+    }
+
+    // Programa del semestre de cada alumno.
+    match /programas/{id} {
+      allow read: if esAdmin() || (esAlumno() && resource.data.alumnoId == miAlumno());
+      allow write: if esAdmin();
+    }
+
     match /avisos/{id} {
       allow read: if esAdmin() || (esAlumno() && paraMi(resource.data.para));
       allow write: if esAdmin();

@@ -10,17 +10,36 @@ export type Clase = { dia: number; hora: string } // dia: 0 domingo … 6 sábad
 export type Alumno = {
   id: string; nombre: string; telefono?: string; correo?: string; instrumento?: string; nivel?: string
   cuota?: number; notas?: string; activo: boolean; clases: Clase[]; uid?: string; vinculado?: boolean
+  encargado?: string // mamá, papá o tutor, para menores de edad
 }
+export type Cuenta = { banco: string; titular: string; numero: string; moneda: string }
 export type Disponible = { dia: number; desde: string; hasta: string }
 export type Ajustes = {
   cuotaMensual: number; moneda: string; diaPago: number; diasAvisoAntes: number
   duracion: number; disponibilidad: Disponible[]; telefonoProfesor: string
+  cuentas: Cuenta[]; mensajeRecordatorio: string; firma: string
 }
 export type Reserva = {
   id: string; alumnoId: string; fecha: string; hora: string; tipo: 'reposicion' | 'extra'
   estado: 'pendiente' | 'aprobada' | 'rechazada'; nota?: string
 }
-export type Pago = { id: string; alumnoId: string; mes: string; monto: number; metodo?: string; nota?: string; fecha?: Timestamp }
+export type Pago = {
+  id: string; alumnoId: string; mes: string; monto: number; metodo?: string; nota?: string; fecha?: Timestamp
+  numero?: number; cuenta?: string; avisoId?: string
+}
+/** El alumno avisa que ya pagó (con foto del comprobante); el profesor lo confirma y se vuelve un Pago con recibo. */
+export type AvisoPago = {
+  id: string; alumnoId: string; mes: string; monto: number; metodo: string; cuenta?: string; referencia?: string
+  foto?: string; nota?: string; estado: 'pendiente' | 'confirmado' | 'rechazado'; motivo?: string; fecha?: Timestamp; pagoId?: string
+}
+export type TipoFecha = 'feriado' | 'sinclase' | 'evento'
+export type Fecha = { id: string; fecha: string; hasta?: string; titulo: string; tipo: TipoFecha; nota?: string }
+export type Tarea = {
+  id: string; titulo: string; texto: string; para: string; entrega?: string; enlace?: string
+  hechas: Record<string, boolean>; fecha?: Timestamp
+}
+export type Tema = { texto: string; hecho: boolean }
+export type Programa = { id: string; alumnoId: string; periodo: string; temas: Tema[]; nota?: string; enlace?: string; actualizado?: Timestamp }
 export type Aviso = { id: string; titulo: string; texto: string; para: string; fecha?: Timestamp }
 export type Material = { id: string; titulo: string; enlace: string; para: string; mes?: string; nota?: string; fecha?: Timestamp }
 
@@ -32,6 +51,9 @@ export const AJUSTES_INICIALES: Ajustes = {
   duracion: 60,
   disponibilidad: [1, 2, 3, 4, 5].map((dia) => ({ dia, desde: '14:00', hasta: '19:00' })),
   telefonoProfesor: '',
+  cuentas: [],
+  mensajeRecordatorio: '',
+  firma: cliente.nombreProfesor ? `${cliente.nombreProfesor}\n${cliente.nombreApp}` : cliente.nombreApp,
 }
 
 // ---------- Lecturas en vivo ----------
@@ -135,10 +157,93 @@ export function enlaceWhatsApp(telefono: string | undefined, texto: string) {
   return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`
 }
 
-export function textoRecordatorio(a: Alumno, mes: string, aj: Ajustes) {
-  const nombre = a.nombre.split(' ')[0]
-  return `Hola ${nombre}, te recuerdo que la cuota de ${nombreMes(mes)} (${dinero(cuotaDe(a, aj), aj)}) vence el ${aj.diaPago}. ¡Gracias! — ${cliente.nombreApp}`
+// Recordatorio formal. El profesor lo puede cambiar en Ajustes; las palabras entre { } se llenan solas.
+export const RECORDATORIO_BASE = `Estimado(a) {nombre}:
+
+Reciba un cordial saludo de {academia}. Le recordamos que la mensualidad de {mes} de {alumno}, por un monto de {monto}, {vence}.
+
+{cuentas}
+Si ya realizó el pago, puede avisarnos desde la app con la foto del comprobante, o ignorar este mensaje.
+
+Agradecemos su puntualidad.
+{firma}`
+
+export const PALABRAS_RECORDATORIO = ['{nombre}', '{alumno}', '{mes}', '{monto}', '{vence}', '{cuentas}', '{academia}', '{firma}']
+
+export function textoCuentas(aj: Ajustes) {
+  const cs = (aj.cuentas ?? []).filter((c) => c.numero.trim())
+  if (cs.length === 0) return ''
+  return `Puede pagar en efectivo o por transferencia/depósito a:\n${cs.map((c) => `• ${c.banco} ${c.moneda} ${c.numero}${c.titular ? ` (a nombre de ${c.titular})` : ''}`).join('\n')}\n`
 }
+
+export function textoRecordatorio(a: Alumno, mes: string, aj: Ajustes) {
+  const dia = deIso(`${mes}-${dos(aj.diaPago)}`)
+  const fechaVence = `${dia.getDate()} de ${MESES[dia.getMonth()]}`
+  const vence = estadoPago(false, mes, aj) === 'atrasado' ? `venció el ${fechaVence} y se encuentra pendiente` : `vence el ${fechaVence}`
+  const valores: Record<string, string> = {
+    '{nombre}': (a.encargado?.trim() || a.nombre).trim(),
+    '{alumno}': a.nombre.trim(),
+    '{mes}': nombreMes(mes),
+    '{monto}': dinero(cuotaDe(a, aj), aj),
+    '{vence}': vence,
+    '{cuentas}': textoCuentas(aj),
+    '{academia}': cliente.nombreApp,
+    '{firma}': aj.firma?.trim() || cliente.nombreApp,
+  }
+  let texto = aj.mensajeRecordatorio?.trim() || RECORDATORIO_BASE
+  for (const [k, v] of Object.entries(valores)) texto = texto.split(k).join(v)
+  return texto.replace(/\n{3,}/g, '\n\n').trim()
+}
+
+// ---------- Recibos ----------
+export const numeroRecibo = (n?: number) => (n ? `N.º ${String(n).padStart(4, '0')}` : 'Sin número')
+export function textoRecibo(p: Pago, a: Alumno | null | undefined, aj: Ajustes) {
+  return [
+    `*${cliente.nombreApp}* — Recibo ${numeroRecibo(p.numero)}`,
+    `Recibimos de: ${a?.encargado?.trim() ? `${a.encargado} (por ${a.nombre})` : a?.nombre ?? ''}`,
+    `Concepto: mensualidad de ${nombreMes(p.mes)}`,
+    `Monto: ${dinero(p.monto, aj)} · ${p.metodo ?? ''}${p.cuenta ? ` (${p.cuenta})` : ''}`,
+    `Fecha: ${(p.fecha?.toDate() ?? new Date()).toLocaleDateString('es-NI')}`,
+    '', '¡Muchas gracias!', aj.firma?.trim() || cliente.nombreApp,
+  ].join('\n')
+}
+
+// ---------- Calendario ----------
+// Feriados nacionales de Nicaragua (Jueves y Viernes Santo cambian cada año).
+function domingoPascua(anio: number) {
+  const a = anio % 19, b = Math.floor(anio / 100), c = anio % 100, d = Math.floor(b / 4), e = b % 4
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1
+  return new Date(anio, mes - 1, dia)
+}
+export function feriadosNicaragua(anio: number): Omit<Fecha, 'id'>[] {
+  const pascua = domingoPascua(anio)
+  const f = (m: number, d: number, titulo: string) => ({ fecha: `${anio}-${dos(m)}-${dos(d)}`, titulo, tipo: 'feriado' as const })
+  return [
+    f(1, 1, 'Año Nuevo'),
+    { fecha: isoDia(sumarDias(pascua, -3)), hasta: isoDia(sumarDias(pascua, -2)), titulo: 'Jueves y Viernes Santo', tipo: 'feriado' },
+    f(5, 1, 'Día del Trabajo'),
+    f(5, 30, 'Día de las Madres'),
+    f(7, 19, 'Aniversario de la Revolución'),
+    { ...f(9, 14, 'Fiestas Patrias'), hasta: `${anio}-09-15` },
+    f(12, 8, 'La Purísima'),
+    f(12, 25, 'Navidad'),
+  ]
+}
+export const TEXTO_FECHA: Record<TipoFecha, [string, string]> = {
+  feriado: ['Feriado', 'p-rosa'],
+  sinclase: ['Sin clases', 'p-amarillo'],
+  evento: ['Actividad', 'p-verde'],
+}
+/** ¿Ese día no hay clases (feriado o día libre)? */
+export const sinClase = (fechas: Fecha[], dia: string) =>
+  fechas.some((f) => f.tipo !== 'evento' && dia >= f.fecha && dia <= (f.hasta || f.fecha))
+export function rangoFecha(f: Fecha) {
+  const a = fechaCorta(deIso(f.fecha))
+  return f.hasta && f.hasta !== f.fecha ? `${a} al ${fechaCorta(deIso(f.hasta))}` : a
+}
+export const periodoActual = () => { const d = new Date(); return `${d.getFullYear()} · ${d.getMonth() < 6 ? 'I' : 'II'} semestre` }
 
 export function mensajeError(e: unknown) {
   const codigo = (e as { code?: string })?.code ?? ''
