@@ -19,7 +19,11 @@
     "detalle": "Qué aprende",
     "detalleEjemplo": "Ej. Guitarra",
     "material": "Material de estudio",
-    "materialDescripcion": "Partituras, audios y videos de Drive"
+    "materialDescripcion": "Partituras, audios y videos de Drive",
+    "tarea": "tarea",
+    "tareas": "tareas",
+    "programa": "programa",
+    "programaDescripcion": "Lo que va a aprender en el semestre"
   },
   "colorPrincipal": "#1f4e8c",
   "colorAcento": "#3fa7cc",
@@ -30,7 +34,10 @@
     "pagos",
     "avisos",
     "reservas",
-    "materiales"
+    "materiales",
+    "tareas",
+    "programas",
+    "calendario"
   ],
   "cobro": {
     "cuotaMensual": 1500,

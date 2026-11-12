@@ -135,3 +135,27 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 #root { height: 100%; }
 .fila-dia { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 1.2fr) auto minmax(0, 1.2fr); gap: 6px; align-items: center; min-height: 44px; }
 .hora-input { border: 1.5px solid var(--linea); background: var(--card); color: var(--fg); border-radius: 10px; padding: 6px 4px; font: inherit; font-size: .85rem; min-width: 0; width: 100%; }
+
+/* Logo propio del cliente */
+.logo-img { object-fit: cover; background: #fff; padding: 0; }
+
+/* Barra de avance (programa del semestre) */
+.progreso { height: 10px; border-radius: 99px; background: color-mix(in srgb, var(--principal) 15%, transparent); overflow: hidden; }
+.progreso span { display: block; height: 100%; background: var(--acento); border-radius: 99px; transition: width .3s; }
+
+/* Recibo */
+.recibo { background: #fff; color: #1d2433; border: 1px solid #d8dde6; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.recibo .cab { display: flex; gap: 12px; align-items: center; border-bottom: 2px solid var(--principal); padding-bottom: 10px; }
+.recibo .cab h2 { color: var(--principal); }
+.recibo .linea { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed #d8dde6; padding: 4px 0; }
+.recibo .linea span:first-child { color: #5b6475; }
+.recibo .total { font-size: 1.3rem; font-weight: 800; color: var(--principal); }
+.foto-mini { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid var(--linea); cursor: zoom-in; flex: none; }
+.hecha { text-decoration: line-through; opacity: .6; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .recibo, .recibo * { visibility: visible !important; }
+  .recibo { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+  .no-imprimir { display: none !important; }
+}

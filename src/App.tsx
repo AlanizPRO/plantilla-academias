@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Actualizar from './Actualizar'
-import { cliente } from './cliente'
+import { cliente, logoAncho } from './cliente'
 import { T } from './textos'
 import { mensajeError } from './datos'
 import { Logo } from './componentes'
@@ -50,7 +50,7 @@ function Entrada() {
   return (
     <div className="entrada">
       <div className="panel">
-        <Logo />
+        {logoAncho ? <img src={logoAncho} alt={cliente.nombreApp} style={{ width: '100%', maxWidth: 360, borderRadius: 12 }} /> : <Logo />}
         <h1>{cliente.nombreApp}</h1>
         <p className="suave">{cliente.descripcion}{cliente.ciudad ? ` · ${cliente.ciudad}` : ''}</p>
         {invitado && <p className="ok">Tienes una invitación. Entra con tu cuenta de Google para activarla.</p>}

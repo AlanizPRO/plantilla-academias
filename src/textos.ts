@@ -15,6 +15,10 @@ const BASE = {
   detalleEjemplo: 'Ej. Guitarra',
   material: 'Material de estudio',
   materialDescripcion: 'Documentos, audios y videos de Drive',
+  tarea: 'tarea',
+  tareas: 'tareas',
+  programa: 'programa',
+  programaDescripcion: 'Lo que va a aprender en el semestre',
 }
 
 const t = { ...BASE, ...((cliente as { textos?: Partial<typeof BASE> }).textos ?? {}) }
@@ -48,4 +52,7 @@ export const T = {
   tusPersonas: `tus ${t.personas}`,
   /** "tu profesor" */
   tuAdmin: `tu ${t.admin}`,
+  Tarea: may(t.tarea),
+  Tareas: may(t.tareas),
+  Programa: may(t.programa),
 }

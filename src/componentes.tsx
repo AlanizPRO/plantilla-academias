@@ -1,9 +1,10 @@
 import { useEffect, type ReactNode } from 'react'
-import { cliente } from './cliente'
+import { cliente, logo } from './cliente'
 import { iniciales } from './datos'
 import { ICONOS } from './iconos'
 
 export function Logo() {
+  if (logo) return <img className="logo logo-img" src={logo} alt="" aria-hidden="true" />
   return <div className="logo" aria-hidden="true">{iniciales(cliente.nombreApp)}</div>
 }
 
@@ -55,4 +56,22 @@ export function Hoja({ titulo, onCerrar, children }: { titulo: string; onCerrar:
 
 export function Vacio({ children }: { children: ReactNode }) {
   return <div className="panel vacio">{children}</div>
+}
+
+// Foto ampliada (comprobantes de pago).
+export function VerFoto({ src, onCerrar }: { src: string; onCerrar: () => void }) {
+  return (
+    <div className="fondo-hoja" style={{ alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onCerrar}>
+      <img src={src} alt="Comprobante" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 12 }} />
+    </div>
+  )
+}
+
+export function Progreso({ valor, total }: { valor: number; total: number }) {
+  const pct = total ? Math.round((valor / total) * 100) : 0
+  return (
+    <div className="progreso" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+      <span style={{ width: `${pct}%` }} />
+    </div>
+  )
 }

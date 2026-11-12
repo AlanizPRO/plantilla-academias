@@ -9,6 +9,7 @@ import {
 } from '../datos'
 import { db } from '../firebase'
 import { ICONOS } from '../iconos'
+import { marcarRecordado } from './Pagos'
 
 export default function Alumnos({ alumnos, ajustes }: { alumnos: Alumno[]; ajustes: Ajustes }) {
   const [buscar, setBuscar] = useState('')
@@ -91,6 +92,7 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
       <div className="panel">
         <p><b>{T.Clases} fij{T.c}s:</b> {(a.clases ?? []).map((c) => `${DIAS[c.dia]} ${hora12(c.hora)}`).join(', ') || (T.claseFemenino ? 'ninguna' : 'ninguno')}</p>
         {a.instrumento && <p><b>{T.detalle}:</b> {a.instrumento}{a.nivel ? ` · ${a.nivel}` : ''}</p>}
+        {a.encargado && <p><b>Encargado:</b> {a.encargado}</p>}
         {a.telefono && <p><b>Teléfono:</b> {a.telefono}</p>}
         {a.correo && <p><b>Correo:</b> {a.correo}</p>}
         {a.notas && <p className="suave">{a.notas}</p>}
@@ -113,7 +115,7 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
       )}
       <div className="fila">
         {a.telefono && a.activo && !pagado && (
-          <a className="btn btn-whatsapp" href={enlaceWhatsApp(a.telefono, textoRecordatorio(a, mes, ajustes))} target="_blank" rel="noreferrer">{ICONOS.whatsapp}Recordar pago</a>
+          <a className="btn btn-whatsapp" href={enlaceWhatsApp(a.telefono, textoRecordatorio(a, mes, ajustes))} target="_blank" rel="noreferrer" onClick={() => marcarRecordado(mes, a.id)}>{ICONOS.whatsapp}Recordar pago</a>
         )}
         <button className="btn btn-borde" onClick={() => setEditando(true)}>Editar</button>
       </div>
@@ -121,7 +123,7 @@ function Ficha({ alumno: a, alumnos, ajustes, pagado, mes, onCerrar }: { alumno:
   )
 }
 
-const VACIO: Omit<Alumno, 'id'> = { nombre: '', telefono: '', correo: '', instrumento: '', nivel: '', notas: '', activo: true, clases: [] }
+const VACIO: Omit<Alumno, 'id'> = { nombre: '', encargado: '', telefono: '', correo: '', instrumento: '', nivel: '', notas: '', activo: true, clases: [] }
 
 function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: Alumno[]; onCerrar: () => void }) {
   const [f, setF] = useState<Omit<Alumno, 'id'>>(() => ({ ...VACIO, ...(alumno ?? {}) }))
@@ -135,7 +137,7 @@ function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: A
     if (!f.nombre.trim()) { setError('Escribe el nombre.'); return }
     setGuardando(true); setError('')
     const datos = {
-      nombre: f.nombre.trim(), telefono: f.telefono?.trim() ?? '', correo: f.correo?.trim() ?? '', instrumento: f.instrumento?.trim() ?? '',
+      nombre: f.nombre.trim(), encargado: f.encargado?.trim() ?? '', telefono: f.telefono?.trim() ?? '', correo: f.correo?.trim() ?? '', instrumento: f.instrumento?.trim() ?? '',
       nivel: f.nivel?.trim() ?? '', notas: f.notas?.trim() ?? '', activo: f.activo, clases: f.clases ?? [], cuota: Number(cuota) || 0,
     }
     try {
@@ -152,6 +154,7 @@ function FormAlumno({ alumno, alumnos, onCerrar }: { alumno?: Alumno; alumnos: A
     <Hoja titulo={alumno ? `Editar ${T.persona}` : T.nuevaPersona} onCerrar={onCerrar}>
       <div className="campos">
         <label className="campo" htmlFor="a-nombre">Nombre completo *<input id="a-nombre" value={f.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
+        <label className="campo" htmlFor="a-enc">Encargado (si es menor)<input id="a-enc" value={f.encargado} onChange={(e) => poner('encargado', e.target.value)} placeholder="Ej. Sra. María López" /></label>
         <label className="campo" htmlFor="a-tel">WhatsApp<input id="a-tel" type="tel" inputMode="tel" value={f.telefono} onChange={(e) => poner('telefono', e.target.value)} placeholder="8888 8888" /></label>
         <label className="campo" htmlFor="a-inst">{T.detalle}<input id="a-inst" value={f.instrumento} onChange={(e) => poner('instrumento', e.target.value)} placeholder={cliente.ensena || T.detalleEjemplo} /></label>
         <label className="campo" htmlFor="a-nivel">Nivel<input id="a-nivel" value={f.nivel} onChange={(e) => poner('nivel', e.target.value)} placeholder="Ej. Principiante" /></label>
